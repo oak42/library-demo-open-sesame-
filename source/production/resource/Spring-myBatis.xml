@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mybatis="http://mybatis.org/schema/mybatis-spring"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring.xsd"
+       default-lazy-init="true">
+
+    <context:property-placeholder location="classpath:application.properties"/>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="annotationClass" value="com.ackerley.library.common.persistence.MyBatisMapper"/><!--【猜】标明mapper interface，否则可能会扫到其他interface，比如@Service，造成按type注bean时的重复bean冲突？(MapperProxy )-->
+        <property name="basePackage" value="com.ackerley.library"/>             <!--scan for mapper interfaces ?-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>      <!--本app仅一个，也可以不写-->
+    </bean>             <!--↑ Note bean names are used, not bean references. This is because the scanner loads early during
+                            the start process and it is too early to build mybatis object instances.
+                            Bean names are used rather than actual objects because Spring does not initialize property placeholders
+                            until after this class is processed.-->
+
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="sqlSessionFactory"/>
+    </bean>
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="typeAliasesPackage" value="com.ackerley.library"/><!--!!!!!!!★★★★★★★-->
+        <!--<property name="typeHandlersPackage" value="com.ackerley.repository.myBatisTypeHandlers"/>-->
+<!--
+        <property name="typeAliases">
+            <array>
+                <value>java.sql.Timestamp</value>
+            </array>
+        </property>
+-->
+        <property name="mapperLocations" value="classpath*:mybatisMappers/**/*Mapper.xml"/>         <!--scan for mapper XML files-->
+        <property name="configLocation" value="classpath:/myBatis-config.xml"></property>
+    </bean>
+
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+        <property name="driverClassName" value="${dbcp2.driverClassName}"/>
+        <property name="url" value="${dbcp2.url}"/>
+        <property name="username" value="${dbcp2.username}"/>
+        <property name="password" value="${dbcp2.password}"/>
+    </bean>
+
+</beans>

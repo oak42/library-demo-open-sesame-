@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.inLibBookCircu.repository.InLibBookMapper">
+
+    <sql id="InLibBookColumns"><!--【ORM】【猜】mybatis可以将column alias中的object graph navigation自动匹配到object field？-->
+        book.id AS ID,
+
+        book.biblio_id AS 'biblio.ID',
+        b.isbn13 AS 'biblio.ISBN13',
+
+        b.cls_id AS 'biblio.cls.ID',
+        bc.notation AS 'biblio.cls.notation',
+        bc.name AS 'biblio.cls.name',
+        bc.parent_id AS 'biblio.cls.parentID',
+        bc.ancestor_ids AS 'biblio.cls.ancestorIDs',
+        bc.remarks AS 'biblio.cls.remarks',
+
+        b.title AS 'biblio.title',
+        b.subtitle AS 'biblio.subtitle',
+        b.original_title AS 'biblio.originalTitle',
+        b.authors AS 'biblio.authors',
+        b.authors_intro AS 'biblio.authorsIntro',
+        b.translators AS 'biblio.translators',
+        b.pages AS 'biblio.pages',
+        b.summary AS 'biblio.summary',
+        b.publisher AS 'biblio.publisher',
+        b.pub_date AS 'biblio.pubDate',
+        b.price AS 'biblio.price',
+        b.price_unit AS 'biblio.priceUnit',
+        b.href_cover_img AS 'biblio.hrefCoverImg',
+        b.href_douban AS 'biblio.hrefDouban',
+        b.remarks AS 'biblio.remarks',
+
+        book.bookshelf_id AS 'bookshelf.ID',
+        bs.label AS 'bookshelf.label',
+        bs.location AS 'bookshelf.location',
+        bs.remarks AS 'bookshelf.remarks',
+
+        book.state AS state,
+        book.bar_code AS barCode,
+        book.remarks AS remarks
+    </sql>
+
+    <sql id="fromTables">
+        FROM inlib_circu_book AS book
+        LEFT OUTER JOIN inlib_circu_bibliography AS b ON book.biblio_id = b.id AND b.del_flag != #{DEL_FLAG_DELETED}
+        LEFT OUTER JOIN sys_biblio_classification AS bc ON b.cls_id = bc.id AND bc.del_flag != #{DEL_FLAG_DELETED}
+        LEFT OUTER JOIN sys_bookshelf AS bs ON book.bookshelf_id = bs.id AND bs.del_flag != #{DEL_FLAG_DELETED}
+    </sql>
+
+
+    <insert id="createOne" parameterType="InLibBook">
+        INSERT INTO inlib_circu_book (
+        id, biblio_id, state, bookshelf_id, bar_code, remarks
+        )
+        VALUES (
+        #{ID}, #{biblio.ID}, #{state}, #{bookshelf.ID}, #{barCode}, #{remarks}
+        )
+    </insert>
+
+    <select id="retrieveOneByID" resultType="InLibBook">
+        SELECT <include refid="InLibBookColumns"/>     <!--注意：这样写的话，String ID入参版本的retrieveOneByID将不适用！只能用entity版本的了...-->
+        <include refid="fromTables"/>
+        WHERE book.id = #{ID}
+    </select>
+
+    <select id="retrieveOneByBarCode" resultType="InLibBook">
+        SELECT <include refid="InLibBookColumns"/>
+        <include refid="fromTables"/>
+        WHERE book.del_flag != #{DEL_FLAG_DELETED}
+        AND book.bar_code = #{barCode}
+    </select>
+
+    <select id="retrieveList" parameterType="InLibBook" resultType="InLibBook"><!--暂仅提供针对 ... 的筛选-->
+        SELECT <include refid="InLibBookColumns"/>
+        <include refid="fromTables"/>
+        WHERE book.del_flag != #{DEL_FLAG_DELETED}
+        <if test="biblio != null and biblio.ID != null and biblio.ID != ''">AND book.biblio_id = #{biblio.ID} </if>
+        <if test="bookshelf != null and bookshelf.ID != null and bookshelf.ID != ''">AND book.bookshelf_id = #{bookshelf.ID} </if>
+        <if test="state != null and state != ''">AND book.state = #{state} </if>
+        <if test="barCode != null and barCode != ''">AND book.bar_code = #{barCode} </if>
+        <if test="remarks != null and remarks != ''">AND book.remarks LIKE concat("%", #{remarks}, "%") </if>
+    </select>
+
+    <update id="updateOneByID" parameterType="InLibBook">
+        UPDATE inlib_circu_book
+        SET
+            biblio_id = #{biblio.ID},
+            bookshelf_id = #{bookshelf.ID},
+            state = #{state},
+            bar_code = #{barCode},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="InLibBook">
+        UPDATE inlib_circu_book
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="biblio != null and biblio.ID != null and biblio.ID != ''">biblio_id = #{biblio.ID}, </if>
+            <if test="bookshelf != null and bookshelf.ID != null and bookshelf.ID != ''">bookshelf_id = #{bookshelf.ID}, </if>
+            <if test="state != null and state != ''">state = #{state}, </if>
+            <if test="barCode != null and barCode != ''">bar_code = #{barCode}, </if>
+            <if test="remarks != null and remarks != ''">remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="InLibBook">
+        UPDATE inlib_circu_book
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

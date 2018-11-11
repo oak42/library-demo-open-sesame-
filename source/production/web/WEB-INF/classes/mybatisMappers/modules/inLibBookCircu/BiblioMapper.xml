@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.inLibBookCircu.repository.BiblioMapper">
+
+    <sql id="biblioColumns">
+        b.id AS ID,
+        b.isbn13 AS ISBN13,
+        b.cls_id AS 'cls.ID',
+        bc.notation AS 'cls.notation',
+        bc.name AS 'cls.name',
+        bc.parent_id AS 'cls.parentID',
+        bc.ancestor_ids AS 'cls.ancestorIDs',
+        bc.remarks AS 'cls.remarks',
+        b.title AS title,
+        b.subtitle AS subtitle,
+        b.original_title AS originalTitle,
+        b.authors AS authors,
+        b.authors_intro AS authorsIntro,
+        b.translators AS translators,
+        b.pages AS pages,
+        b.summary AS summary,
+        b.publisher AS publisher,
+        b.pub_date AS pubDate,
+        b.price AS price,
+        b.price_unit AS priceUnit,
+        b.href_cover_img AS hrefCoverImg,
+        b.href_douban AS hrefDouban,
+        b.remarks AS remarks
+    </sql>
+
+    <sql id="fromTables">
+        FROM inlib_circu_bibliography AS b
+        LEFT OUTER JOIN sys_biblio_classification AS bc ON b.cls_id = bc.id AND bc.del_flag != #{DEL_FLAG_DELETED}
+    </sql>
+
+    <insert id="createOne" parameterType="Biblio">
+        INSERT INTO inlib_circu_bibliography (
+        id, isbn13, cls_id, title, subtitle, original_title,
+        authors, authors_intro, translators,
+        pages, summary, publisher, pub_date,
+        price, price_unit,
+        href_cover_img, href_douban,
+        remarks
+        )
+        VALUES (
+        #{ID}, #{ISBN13}, #{cls.ID}, #{title}, #{subtitle}, #{originalTitle},
+        #{authors}, #{authorsIntro}, #{translators},
+        #{pages}, #{summary}, #{publisher}, #{pubDate},
+        #{price}, #{priceUnit},
+        #{hrefCoverImg}, #{hrefDouban},
+        #{remarks}
+        )
+    </insert>
+
+    <select id="retrieveOneByID" resultType="Biblio">
+        SELECT <include refid="biblioColumns"/>
+        <include refid="fromTables"/>
+        WHERE b.id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="Biblio" resultType="Biblio"><!--暂仅提供针对 ... 的筛选-->
+        SELECT <include refid="biblioColumns"/>
+        <include refid="fromTables"/>
+        WHERE b.del_flag != #{DEL_FLAG_DELETED}
+        <if test="ISBN13 != null and ISBN13 != ''">AND b.isbn13 LIKE concat("%",#{ISBN13},"%") </if>
+        <if test="cls != null and cls.ID != null and cls.ID != ''">AND b.cls_id = #{cls.ID} </if>
+        <if test="cls != null and cls.parentID != null and cls.parentID != ''">AND bc.parent_id = #{cls.parentID} </if>
+        <if test="cls != null and cls.ancestorIDs != null and cls.ancestorIDs != ''">AND bc.ancestor_ids LIKE concat("%",#{cls.ancestorIDs},"%") </if><!--★用法上 为 依照单个ancestor id来筛选-->
+        <if test="title != null and title != ''">AND b.title LIKE concat("%",#{title},"%") </if>
+        <if test="subtitle != null and subtitle != ''">AND b.subtitle LIKE concat("%",#{subtitle},"%") </if>
+        <if test="authors != null and authors != ''">AND b.authors LIKE concat("%",#{authors},"%") </if>
+        <if test="translators != null and translators != ''">AND b.translators LIKE concat("%",#{translators},"%") </if>
+        <if test="publisher != null and publisher != ''">AND b.publisher LIKE concat("%",#{publisher},"%") </if>
+    </select>
+
+    <!--针对 title与subtitle、cls.ID与cls.ancestorIDs 模糊筛选，即：title参 既作title又作subtitle，cls.ID参 既作cls.ID又作cls.ancestorIDs-->
+    <select id="retrieveListFuzzyQuery" parameterType="Biblio" resultType="Biblio">
+        SELECT <include refid="biblioColumns"/>
+        <include refid="fromTables"/>
+        WHERE b.del_flag != #{DEL_FLAG_DELETED}
+        <if test="ISBN13 != null and ISBN13 != ''">AND b.isbn13 LIKE concat("%",#{ISBN13},"%") </if>
+        <if test="cls != null and cls.ID != null and cls.ID != ''">AND (b.cls_id = #{cls.ID} OR bc.ancestor_ids LIKE concat("%",#{cls.ID},"%"))</if>
+        <if test="cls != null and cls.parentID != null and cls.parentID != ''">AND bc.parent_id = #{cls.parentID} </if>
+        <if test="title != null and title != ''">AND (b.title LIKE concat("%",#{title},"%") OR b.subtitle LIKE concat("%",#{title},"%"))</if>
+        <if test="authors != null and authors != ''">AND b.authors LIKE concat("%",#{authors},"%") </if>
+        <if test="translators != null and translators != ''">AND b.translators LIKE concat("%",#{translators},"%") </if>
+        <if test="publisher != null and publisher != ''">AND b.publisher LIKE concat("%",#{publisher},"%") </if>
+    </select>
+
+    <update id="updateOneByID" parameterType="Biblio">
+        UPDATE inlib_circu_bibliography
+        SET
+            isbn13 = #{ISBN13},
+            cls_id = #{cls.ID},
+            title = #{title},
+            subtitle = #{subtitle},
+            original_title = #{originalTitle},
+            authors = #{authors},
+            authors_intro = #{authorsIntro},
+            translators = #{translators},
+            pages = #{pages},
+            summary = #{summary},
+            publisher = #{publisher},
+            pub_date = #{pubDate},
+            price = #{price},
+            price_unit = #{priceUnit},
+            href_cover_img = #{hrefCoverImg},
+            href_douban = #{hrefDouban},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="Biblio">
+        UPDATE inlib_circu_bibliography
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

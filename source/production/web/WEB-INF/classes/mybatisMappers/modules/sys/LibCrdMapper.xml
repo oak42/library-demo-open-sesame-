@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.sys.repository.LibCrdMapper">
+
+    <sql id="libCrdColumns"><!--不含pwd、del_flag-->
+        id, user_id, user_photo, bar_code, issue_date, issuing_transactor_id, remarks
+    </sql>
+
+    <resultMap id="libCrdResult" type="LibCrd">
+        <id column="id" property="ID"/>
+        <result column="user_id" property="ownerID"/>
+        <result column="user_photo" property="hrefOwnerPhoto"/>
+        <result column="bar_code" property="barCode"/>
+        <result column="issue_date" property="issueDate"/>
+        <result column="issuing_transactor_id" property="issuingTransactorID"/>
+        <result column="remarks" property="remarks"/>
+    </resultMap>
+
+    <insert id="createOne" parameterType="LibCrd">
+        INSERT INTO sys_lib_crd (
+            id, user_id, user_photo, bar_code, issue_date, issuing_transactor_id, remarks )
+        VALUES ( #{ID}, #{ownerID}, #{hrefOwnerPhoto}, #{barCode}, #{issueDate}, #{issuingTransactorID}, #{unpaidFineID}, #{remarks} )
+    </insert>
+
+    <select id="retrieveOneByID" resultMap="libCrdResult"><!--【扣】parameterType的有意省略？！模糊性？！-->
+        SELECT <include refid="libCrdColumns"/>
+        FROM sys_lib_crd
+        WHERE id = #{ID}
+ <!--       AND del_flag != #{DEL_FLAG_DELETED}    --><!--【鸣】体会一下：retrieveList时，凭del_flag筛选，出；这里不使用del_flag筛选，也正好适应了string版本parameterType，不存在DEL_FLAG_DELETED-->
+    </select>
+
+    <select id="retrieveList" parameterType="LibCrd" resultMap="libCrdResult">
+        SELECT <include refid="libCrdColumns"/>
+        FROM sys_lib_crd
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="ownerID != null and ownerID != ''">AND user_id = #{ownerID} </if>
+        <if test="barCode != null and barCode != ''">AND bar_code = #{barCode} </if>
+        <if test="issuingTransactorID != null and issuingTransactorID != ''">AND issuing_transactor_id = #{issuingTransactorID} </if>
+        <if test="remarks != null and remarks != ''">AND remarks LIKE concat("%",#{remarks},"%")</if>
+        <!--【鸣】注意！对于concat()，任何null参数将导致返回null，于此处造成LIKE null，那就变成只筛选出null filed了；而另外%%则会导致匹配不到null field。所以null和空串都要防-->
+    </select>
+
+    <update id="updateOneByID" parameterType="LibCrd">
+        UPDATE sys_lib_crd
+        SET
+            user_id = #{ownerID},
+            user_photo = #{hrefOwnerPhoto},
+            bar_code = #{barCode},
+            issue_date = #{issueDate},
+            issuing_transactor_id = #{issuingTransactorID},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="User"><!--id不可能改，pwd、del_flag不在这改-->
+        UPDATE sys_lib_crd
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="ownerID != null and ownerID != ''">SET user_id = #{ownerID}, </if>
+            <if test="hrefOwnerPhoto != null and hrefOwnerPhoto != ''">SET user_photo = #{hrefOwnerPhoto}, </if>
+            <if test="barCode != null and barCode != ''">SET bar_code = #{barCode}, </if>
+            <if test="issueDate != null and issueDate != ''">SET issue_date = #{issueDate}, </if>
+            <if test="issuingTransactorID != null and issuingTransactorID != ''">SET issuing_transactor_id = #{issuingTransactorID}, </if>
+            <if test="remarks != null and remarks != ''">SET remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="LibCrd">
+        UPDATE sys_lib_crd
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

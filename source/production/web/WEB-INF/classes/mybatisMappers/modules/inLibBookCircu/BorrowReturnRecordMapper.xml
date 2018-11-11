@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.inLibBookCircu.repository.BorrowReturnRecordMapper">
+
+    <sql id="borrowReturnRecordColumns">
+        id AS ID,
+        book_id AS bookID,
+        borrow_time AS borrowTime,
+        lib_crd_id AS libCrdID,
+        lending_transactor_id AS lendingTransactorID,
+        return_time AS returnTime,
+        returning_transactor_id AS returningTransactorID,
+        is_renewed AS isRenewed,
+        is_overdue AS isOverdue,
+        stage AS stage,
+        remarks AS remarks
+    </sql>
+
+    <insert id="createOne" parameterType="BorrowReturnRecord">
+        INSERT INTO inlib_circu_borrow_return_record (
+        id, book_id,
+        borrow_time, lib_crd_id, lending_transactor_id,
+        return_time, returning_transactor_id,
+        is_renewed, is_overdue, stage, remarks
+        )
+        VALUES (
+        #{ID}, #{bookID},
+        #{borrowTime}, #{libCrdID}, #{lendingTransactorID},
+        #{returnTime}, #{returningTransactorID},
+        #{isRenewed}, #{isOverdue}, #{stage}, #{remarks}
+        )
+    </insert>
+
+    <select id="retrieveOneByID" resultType="BorrowReturnRecord">
+        SELECT <include refid="borrowReturnRecordColumns"/>
+        FROM inlib_circu_borrow_return_record
+        WHERE id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="BorrowReturnRecord" resultType="BorrowReturnRecord"><!--暂仅提供针对 ... 的筛选-->
+        SELECT <include refid="borrowReturnRecordColumns"/>
+        FROM inlib_circu_borrow_return_record
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="bookID != null and bookID != ''">AND book_id = #{bookID} </if>
+        <if test="libCrdID != null and libCrdID != ''">AND lib_crd_id = #{libCrdID} </if>
+        <if test="lendingTransactorID != null and lendingTransactorID != ''">AND lending_transactor_id = #{lendingTransactorID} </if><!--★用法上 为 依照单个ancestor id来筛选-->
+        <if test="returningTransactorID != null and returningTransactorID != ''">AND returning_transactor_id = #{returningTransactorID} </if>
+        <if test="isRenewed != null and isRenewed != ''">AND is_renewed = #{isRenewed} </if>
+        <if test="isOverdue != null and isOverdue != ''">AND is_overdue = #{isOverdue} </if>
+        <if test="stage != null and stage != ''">AND stage = #{stage} </if>
+        <if test="remarks != null and remarks != ''">AND remarks LIKE concat("%",#{remarks},"%") </if>
+    </select>
+
+    <update id="updateOneByID" parameterType="BorrowReturnRecord">
+        UPDATE inlib_circu_borrow_return_record
+        SET
+            book_id = #{bookID},
+            borrow_time = #{borrowTime},
+            lib_crd_id = #{libCrdID},
+            lending_transactor_id = #{lendingTransactorID},
+            return_time = #{returnTime},
+            returning_transactor_id = #{returningTransactorID},
+            is_renewed = #{isRenewed},
+            is_overdue = #{isOverdue},
+            stage = #{stage},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="InLibBook">
+        UPDATE inlib_circu_borrow_return_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="bookID != null and bookID != ''">book_id = #{bookID}, </if>
+            <if test="borrowTime != null and borrowTime != ''">borrow_time = #{borrowTime}, </if>
+            <if test="libCrdID != null and libCrdID != ''">lib_crd_id = #{libCrdID}, </if>
+            <if test="lendingTransactorID != null and lendingTransactorID != ''">lending_transactor_id = #{lendingTransactorID}, </if>
+            <if test="returnTime != null and returnTime != ''">return_time = #{returnTime}, </if>
+            <if test="returningTransactorID != null and returningTransactorID != ''">returning_transactor_id = #{returningTransactorID}, </if>
+            <if test="isRenewed != null and isRenewed != ''">is_renewed = #{isRenewed}, </if>
+            <if test="isOverdue != null and isOverdue != ''">is_overdue = #{isOverdue}, </if>
+            <if test="stage != null and stage != ''">stage = #{stage}, </if>
+            <if test="remarks != null and remarks != ''">remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="BorrowReturnRecord">
+        UPDATE inlib_circu_borrow_return_record
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

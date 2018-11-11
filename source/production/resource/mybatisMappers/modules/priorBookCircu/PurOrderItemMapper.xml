@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.priorBookCircu.repository.PurOrderItemMapper">
+
+    <sql id="purOrderItemColumns">
+        poi.id,
+        poi.pur_order_id,
+        poi.isbn13,
+        pi.title,
+        poi.order_quantity,
+        poi.inbound_quantity,
+        poi.remarks
+        <!--del_flag是设有【MySQL】default value的，算不算不是best practice？依赖默认行为了...-->
+    </sql>
+
+    <sql id="joinProcInstc">
+        INNER JOIN prior_circu_proc_instc AS pi
+        ON poi.isbn13 = pi.isbn13 AND pi.stage IN ("prior_circu_stg_acquiring", "prior_circu_stg_cataloging", "prior_circu_stg_in_lib") <!--【扣】ugly!还有其他办法没？传多个参比较累赘-->
+    </sql>
+
+    <resultMap id="purOrderItemResult" type="PBCPurOrderItem">
+        <id column="id" property="ID"/>
+        <result column="pur_order_id" property="purOrderID"/>
+        <result column="isbn13" property="ISBN13"/>
+        <result column="title" property="title"/>
+        <result column="order_quantity" property="orderQty"/>
+        <result column="inbound_quantity" property="inboundQty"/>
+        <result column="remarks" property="remarks"/>
+    </resultMap>
+
+    <insert id="createOne" parameterType="PBCPurOrderItem">
+        INSERT INTO prior_circu_pur_order_item (
+        id, pur_order_id, isbn13, order_quantity, inbound_quantity, remarks
+        )
+        VALUES ( #{ID}, #{purOrderID}, #{ISBN13}, #{orderQty}, #{inboundQty}, #{remarks} )
+    </insert>
+
+    <select id="retrieveOneByID" resultMap="purOrderItemResult"><!--【扣】parameterType的有意省略？！模糊性？！-->
+        SELECT
+        <include refid="purOrderItemColumns"/>
+        FROM prior_circu_pur_order_item AS poi
+        <include refid="joinProcInstc"/>
+        WHERE poi.id = #{ID}
+        <!--       AND del_flag != #{DEL_FLAG_DELETED}    --><!--【鸣】体会一下：retrieveList时，凭del_flag筛选，出；这里不使用del_flag筛选，也正好适应了string版本parameterType，不存在DEL_FLAG_DELETED-->
+    </select>
+
+    <select id="retrieveList" parameterType="PBCPurOrderItem" resultMap="purOrderItemResult">
+        SELECT
+        <include refid="purOrderItemColumns"/>
+        FROM prior_circu_pur_order_item AS poi
+        <include refid="joinProcInstc"/>
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="purOrderID != null and purOrderID != ''">AND pur_order_id = #{purOrderID} </if><!--【扣】<if>的test属性中对对象field的引用为何可以不用${}?test属性的语境天生就是Java语境？-->
+        <if test="ISBN13 != null and ISBN13 != ''">AND isbn13 = #{ISBN13} </if>
+    <!--<if ...-->
+    </select>
+
+    <!--demo一用，此种modeling的逻辑不严谨，目前只适用于一个ISBN13采购一次的情况，即一个ISBN13仅对应一条记录-->
+    <select id="retrieveInboundQtyByISBN13" parameterType="String" resultType="Integer">
+        SELECT inbound_quantity
+        FROM prior_circu_pur_order_item
+        WHERE del_flag != "1"
+        AND isbn13 = #{param}
+    </select>
+
+
+    <update id="updateNonBlankByID" parameterType="PBCPurOrderItem"><!--代表过去/历史，似乎逻辑上 行为记录 无需update操作？-->
+        UPDATE prior_circu_pur_order_item
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="purOrderID != null and purOrderID != ''"> pur_order_id = #{purOrderID}, </if>
+            <if test="ISBN13 != null and ISBN13 != ''"> isbn13 = #{ISBN13}, </if>
+            <if test="orderQty != null and orderQty != ''"> order_quantity = #{orderQty}, </if>
+            <if test="inboundQty != null and inboundQty != ''"> inbound_quantity = #{inboundQty}, </if>
+            <if test="remarks != null and remarks != ''"> remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateOneByID" parameterType="PBCPurOrderItem"><!--代表过去/历史，似乎逻辑上 行为记录 无需update操作？-->
+        UPDATE prior_circu_pur_order_item
+        SET
+        pur_order_id = #{purOrderID},
+        isbn13 = #{ISBN13},
+        order_quantity = #{orderQty},
+        inbound_quantity = #{inboundQty},
+        remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="PBCPurOrderItem">
+        UPDATE prior_circu_pur_order_item
+        SET del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

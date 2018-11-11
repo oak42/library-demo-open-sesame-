@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.sys.repository.MenuMapper">
+
+    <sql id="menuColumns"><!--不含pwd、del_flag-->
+        m.id, m.name, m.parent_id, m.href, m.required_permissions, m.presence_flag, m.local_ordering, m.remarks
+    </sql>
+
+    <resultMap id="menuResult" type="Menu">
+        <id column="id" property="ID"/>
+        <result column="name" property="name"/>
+        <result column="parent_id" property="parentID"/>
+        <result column="href" property="href"/>
+        <result column="required_permissions" property="requiredPermissions"/>
+        <result column="presence_flag" property="presenceFlag"/>
+        <result column="local_ordering" property="localOrdering"/>
+        <result column="remarks" property="remarks"/>
+    </resultMap>
+
+    <insert id="createOne" parameterType="Menu">
+        INSERT INTO sys_menu ( id, name, parent_id, href, required_permissions, presence_flag, local_ordering, remarks )
+        VALUES ( #{ID}, #{name}, #{parentID}, #{href}, #{requiredPermissions}, #{presenceFlag}, #{localOrdering}, #{remarks} )
+    </insert>
+
+    <select id="retrieveOneByID" resultMap="menuResult">
+        SELECT  <include refid="menuColumns"/>
+        FROM sys_menu
+        WHERE id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="Menu" resultMap="menuResult"><!--不筛选href、local_ordering-->
+        SELECT <include refid="menuColumns"/>
+        FROM sys_menu
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="name != null and name != ''">AND name LIKE CONCAT("%", #{name}, "%" )</if>
+        <if test="parentID != null and parentID != ''">AND parent_id = #{parentID} </if>
+        <if test="requiredPermissions != null and requiredPermissions != ''">AND required_permissions LIKE CONCAT("%", #{requiredPermissions}, "%" )</if>
+        <if test="presenceFlag != null and presenceFlag != ''">AND presence_flag = #{presenceFlag} )</if>
+        <if test="remarks != null and remarks != ''">AND remarks LIKE CONCAT("%", #{remarks}, "%" )</if>
+    </select>
+
+    <select id="getMenuListByUserID" parameterType="String" resultMap="menuResult">
+        SELECT <include refid="menuColumns"/>
+        FROM sys_menu m
+        LEFT JOIN sys_menu p ON m.parent_id = p.id AND m.del_flag != "1" AND p.del_flag != "1"
+        JOIN sys_role_menu_rlat rm ON m.id = rm.menu_id
+        JOIN sys_user_role_rlat ur ON rm.role_id = ur.role_id
+        JOIN sys_user u ON ur.user_id = u.id AND u.del_flag != "1" AND u.id = #{usersssssssID}
+        ORDER BY m.local_ordering
+    </select>
+
+    <update id="updateOneByID" parameterType="Menu">
+        UPDATE sys_menu
+        SET
+            name = #{name},
+            parent_id = #{parentID},
+            href = #{href},
+            required_permissions = #{requiredPermissions},
+            presence_flag = #{presenceFlag},
+            local_ordering = #{localOrdering},
+            remarks = #{remarks}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="Menu"><!--id不可能改，pwd、del_flag不在这改-->
+        UPDATE sys_menu
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">SET name = #{name}, </if>
+            <if test="parentID != null and parentID != ''">SET parent_id = #{parentID}, </if>
+            <if test="href != null and href != ''">SET href = #{href}, </if>
+            <if test="requiredPermissions != null and requiredPermissions != ''">SET required_permissions = #{requiredPermissions}, </if>
+            <if test="presenceFlag != null and presenceFlag != ''">SET presence_flag = #{presenceFlag}, </if>
+            <if test="localOrdering != null and localOrdering != ''">SET local_ordering = #{localOrdering}, </if>
+            <if test="remarks != null and remarks != ''">SET remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="Menu">
+        UPDATE sys_menu
+        SET
+        del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+
+
+</mapper>

@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.priorBookCircu.repository.ProcInstcMapper">
+
+    <sql id="procInstcSimpleColumns">
+        id,
+        isbn13,
+        title,
+        stage,
+        heat,
+        remarks
+    </sql>
+
+    <sql id="procInstcColumnsWithActnRecords">
+        pi.id AS pi_id,
+        pi.isbn13 AS pi_isbn13,
+        pi.title AS pi_title,
+        pi.stage AS pi_stage,
+        pi.heat AS pi_heat,
+        pi.remarks AS pi_remarks,
+        ar.id AS ar_id,
+        ar.proc_id AS ar_proc_id,
+        ar.action AS ar_action,
+        ar.action_time AS ar_action_time,
+        ar.doer_id AS ar_doer_id,
+        ar.remarks AS ar_remarks
+    </sql>
+
+    <resultMap id="procInstcSimpleResult" type="PBCProcInstc">
+        <id column="id" property="ID"/>
+        <result column="isbn13" property="ISBN13"/>
+        <result column="title" property="title"/>
+        <result column="stage" property="stage"/>
+        <result column="heat" property="heat"/>
+        <result column="remarks" property="remarks"/>
+    </resultMap>
+
+    <resultMap id="procInstcResult" type="PBCProcInstc">
+        <id column="pi_id" property="ID"/>
+        <result column="pi_isbn13" property="ISBN13"/>
+        <result column="pi_title" property="title"/>
+        <result column="pi_stage" property="stage"/>
+        <result column="pi_heat" property="heat"/>
+        <result column="pi_remarks" property="remarks"/>
+    </resultMap>
+
+    <resultMap id="procInstcResultWithActnRecords" type="PBCProcInstc" extends="procInstcResult">
+        <collection property="actnRecordList" ofType="PBCActnRecord"><!--【鸣】ofType 是 necessary 的...-->
+            <constructor>
+                <idArg column="ar_id" javaType="String"/>
+                <arg column="ar_proc_id" javaType="String"/>
+                <arg column="ar_action" javaType="String"/>
+                <arg column="ar_action_time" javaType="java.sql.Timestamp"/><!--【扣】TIMESTAMP → Date不能？出错？！试试，报什么错，不太懂；另：Timestamp居然不是mybatis内置别名？...-->
+                <arg column="ar_doer_id" javaType="String"/>
+                <arg column="ar_remarks" javaType="String"/>
+            </constructor>
+        </collection>
+    </resultMap>
+
+    <insert id="createOne" parameterType="PBCProcInstc">
+        INSERT INTO prior_circu_proc_instc (
+        <include refid="procInstcSimpleColumns"/>
+        )
+        VALUES ( #{ID}, #{ISBN13}, #{title}, #{stage}, 1, #{remarks}
+        )
+    </insert>
+
+    <!--【扣】此条select，对应两个不同形参版本的mapper interface method的？！对应parameterType的有意省略？！-->
+    <select id="retrieveOneByID" resultMap="procInstcSimpleResult"><!--【扣】parameterType的有意省略？！模糊性？！-->
+        SELECT
+        <include refid="procInstcSimpleColumns"/>
+        FROM prior_circu_proc_instc
+        WHERE id = #{ID}
+        <!--       AND del_flag != #{DEL_FLAG_DELETED}    --><!--【鸣】体会一下：retrieveList时，凭del_flag筛选，出；这里不使用del_flag筛选，也正好适应了string版本parameterType，不存在DEL_FLAG_DELETED-->
+    </select>
+
+    <select id="retrieveList" parameterType="PBCProcInstc" resultMap="procInstcSimpleResult">
+        SELECT
+        <include refid="procInstcSimpleColumns"/>
+        FROM prior_circu_proc_instc
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="ISBN13 != null and ISBN13 != ''">AND isbn13 = #{ISBN13}</if><!--【扣】<if>的test属性中对对象field的引用为何可以不用${}?test属性的语境天生就是Java语境？-->
+        <if test="title != null and title != ''">AND title LIKE concat("%",#{title},"%")</if>
+        <if test="heat != null and heat != ''">AND heat >= #{heat}</if>    <!--热度值下限！-->
+        <if test="stage != null and stage != ''">AND stage = #{stage}</if>
+        ORDER BY heat DESC
+    </select>
+
+    <!--本人参与的(1.作为建议人,建议；2.作为审核员，审核；3.作为复审员，复审...可进一步根据action来筛选(在子查询中筛选)...)流程，带actn record list...-->
+    <select id="retrievePersonalListWithActnRecords" resultMap="procInstcResultWithActnRecords">
+        SELECT
+        <include refid="procInstcColumnsWithActnRecords"/>
+        FROM prior_circu_proc_instc AS pi
+        INNER JOIN prior_circu_actn_record AS ar ON pi.id = ar.proc_id
+        WHERE pi.del_flag != #{procInstc.DEL_FLAG_DELETED}
+        AND pi.id IN
+        (
+        SELECT proc_id FROM prior_circu_actn_record   <!--personal... 非相关子查询non-correlated subquery-->
+        WHERE doer_id = #{actnRecord.doerID}
+        <if test="actnRecord.action != null and actnRecord.action != ''">AND action = CONCAT(#{procInstc.PCS_INI}, ":", #{actnRecord.PCA_INI})</if>
+        )
+        <!--WHERE ar.del_flag != #{DEL_FLAG_DELETED}-->
+        <if test="procInstc.ISBN13 != null and procInstc.ISBN13 != ''">AND pi.isbn13 = #{procInstc.ISBN13}
+        </if><!--【扣】<if>的test属性中对对象field的引用为何可以不用${}?test属性的语境天生就是Java语境？-->
+        <if test="procInstc.title != null and procInstc.title != ''">AND pi.title LIKE
+            concat("%",#{procInstc.title},"%")
+        </if>
+        <if test="procInstc.heat != null and procInstc.heat != ''">AND pi.heat >= #{procInstc.heat}
+        </if>    <!--热度值下限！-->
+        <if test="procInstc.stage != null and procInstc.stage != ''">AND pi.stage = #{procInstc.stage}</if>
+
+        ORDER BY heat DESC
+    </select>
+
+    <!--获取除去被reject的其余流程实例们，即 进行中的 和 成功走完全程的......不出错的话，一条ISBN13下只有一条positive流程实例，不成功的才可能有多条(被reject后不断recommend...)-->
+    <select id="retrievePositiveList" parameterType="PBCProcInstc" resultMap="procInstcSimpleResult">
+        SELECT
+        <include refid="procInstcSimpleColumns"/>
+        FROM prior_circu_proc_instc
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="ISBN13 != null and ISBN13 != ''">AND isbn13 = #{ISBN13}
+        </if><!--【扣】<if>的test属性中对对象field的引用为何可以不用${}?test属性的语境天生就是Java语境？-->
+        <if test="title != null and title != ''">AND title LIKE concat("%",#{title},"%")</if>
+        <if test="heat != null and heat != ''">AND heat >= #{heat}</if>    <!--热度值下限！-->
+        AND stage NOT IN (#{PCS_RVW_RJCT}, #{PCS_FNL_RVW_RJCT})
+    </select>
+
+    <!--本人 是否有对该书的采编建议还在审核中，避免同一人重复刷heat-->
+    <select id="isPersonalISBN13RcmdStillUnderReview"
+            resultType="Boolean"><!--【鸣】若select不到，返回null哦！boolean是primitive type不可接受null，Boolean！-->
+        SELECT TRUE
+        FROM prior_circu_proc_instc AS pi
+        INNER JOIN prior_circu_actn_record ar ON pi.id = ar.proc_id
+        WHERE pi.isbn13 = #{procInstc.ISBN13}
+        AND ar.doer_id = #{actnRecord.doerID}  <!--personal-->
+        AND ar.action = CONCAT(#{procInstc.PCS_INI}, ":", #{actnRecord.PCA_INI})
+        AND pi.stage IN (#{procInstc.PCS_RVW}, #{procInstc.PCS_FNL_RVW})
+    </select>
+
+    <!--待列采购单(项)列表 = 所有终审通过项 - 所有在"on"状态的现有采购单下的项-->
+    <select id="retrieveToPurOrderList" parameterType="PBCProcInstc" resultMap="procInstcSimpleResult">
+        SELECT
+        <include refid="procInstcSimpleColumns"/>
+        FROM prior_circu_proc_instc
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        AND stage = #{PCS_ACQ}
+        AND isbn13 NOT IN (               <!--☆☆☆☆☆☆☆-->
+        SELECT poi.isbn13
+        FROM prior_circu_pur_order_item AS poi
+        INNER JOIN prior_circu_pur_order AS po
+        ON poi.pur_order_id = po.id
+        WHERE po.order_state = "acquiring" )
+        <if test="ISBN13 != null and ISBN13 != ''">AND isbn13 = #{ISBN13}
+        </if><!--【扣】<if>的test属性中对对象field的引用为何可以不用${}?test属性的语境天生就是Java语境？-->
+        <if test="title != null and title != ''">AND title LIKE concat("%",#{title},"%")</if>
+        <if test="heat != null and heat != ''">AND heat >= #{heat}</if>    <!--热度值下限！-->
+        ORDER BY heat DESC
+    </select>
+
+    <select id="retrieveStageAcqProcInstcIDByISBN13" parameterType="PBCProcInstc" resultType="String">
+        SELECT id
+        FROM prior_circu_proc_instc
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        AND stage = #{PCS_ACQ}
+        AND isbn13 = #{ISBN13}
+    </select>
+
+    <!--待编目(项)列表-->
+    <select id="retrieveToBeCatalogedList" parameterType="PBCProcInstc" resultMap="procInstcSimpleResult">
+        SELECT
+        <include refid="procInstcSimpleColumns"/>
+        FROM prior_circu_proc_instc
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        AND stage = #{PCS_CTLG}
+        ORDER BY heat DESC
+    </select>
+
+    <update id="updateOneByID" parameterType="PBCProcInstc">
+        UPDATE prior_circu_proc_instc
+        SET
+            isbn13 = #{ISBN13},
+            title = #{title},
+            stage = #{stage},
+            heat = #{heat},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="contribute1Heat" parameterType="PBCProcInstc">
+        UPDATE prior_circu_proc_instc
+        SET
+        heat = heat + 1
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="PBCProcInstc">
+        UPDATE prior_circu_proc_instc
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="ISBN13 != null and ISBN13 != ''">isbn13 = #{ISBN13},</if>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="stage != null and stage != ''">stage = #{stage},</if>
+            <if test="heat != null and heat != ''">heat = #{heat},</if>
+            <if test="remarks != null and remarks != ''">remarks = #{remarks},</if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+<!--
+    <update id="advanceStageByISBN13">
+        UPDATE prior_circu_proc_instc
+        SET stage = #{param3}
+        WHERE del_flag != "1"  &lt;!&ndash;【扣】还有其他办法没？传多个参比较累赘&ndash;&gt;
+        AND stage = #{param2}
+        AND isbn13 = #{param1}
+    </update>
+-->
+
+    <update id="deleteOneByID" parameterType="PBCProcInstc">
+        UPDATE prior_circu_proc_instc
+        SET del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

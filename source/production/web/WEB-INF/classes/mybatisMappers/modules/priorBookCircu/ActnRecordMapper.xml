@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.priorBookCircu.repository.ActnRecordMapper">
+
+    <sql id="actnRecordColumns">
+        id, proc_id, action, action_time, doer_id, remarks
+    </sql>
+
+    <resultMap id="actnRecordResult" type="PBCActnRecord">
+        <id column="id" property="ID"/>
+        <result column="proc_id" property="procID"/>
+        <result column="action" property="action"/>
+        <result column="action_time" property="actionTime"/>
+        <result column="doer_id" property="doerID"/>
+        <result column="remarks" property="remarks"/>
+        <!--......-->
+    </resultMap>
+
+    <insert id="createOne" parameterType="PBCActnRecord">
+        INSERT INTO prior_circu_actn_record (
+        <include refid="actnRecordColumns"/>
+        )
+        VALUES ( #{ID}, #{procID}, #{action}, #{actionTime}, #{doerID}, #{remarks} )
+    </insert>
+
+    <!--【扣】此条select，对应两个不同形参版本的mapper interface method的？！对应parameterType的有意省略？！-->
+    <select id="retrieveOneByID" resultMap="actnRecordResult"><!--【扣】parameterType的有意省略？！模糊性？！-->
+        SELECT
+        <include refid="actnRecordColumns"/>
+        FROM prior_circu_actn_record
+        WHERE id = #{ID}
+        <!--       AND del_flag != #{DEL_FLAG_DELETED}    --><!--【鸣】体会一下：retrieveList时，凭del_flag筛选，出；这里不使用del_flag筛选，也正好适应了string版本parameterType，不存在DEL_FLAG_DELETED-->
+    </select>
+
+    <select id="retrieveList" parameterType="PBCActnRecord" resultMap="actnRecordResult">
+        SELECT
+        <include refid="actnRecordColumns"/>
+        FROM prior_circu_actn_record
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="procID != null and procID != ''">AND proc_id = #{procID} </if><!--【扣】<if>的test属性中对对象field的引用为何可以不用${}?test属性的语境天生就是Java语境？-->
+        <if test="action != null and action != ''">AND action = #{action} </if>
+        <if test="actionTimeRangeFilter != null">AND action_time BETWEEN #{actionTimeRangeFilter.from} AND #{actionTimeRangeFilter.to} </if>
+        <if test="doerID != null and doerID != ''">AND doer_id = #{doerID} </if>
+        ORDER BY action_time
+        <!--【扣】<if>的test属性中对对象field的引用为何可以不用${}?-->
+    </select>
+
+
+
+    <update id="updateOneByID" parameterType="PBCActnRecord"><!--代表过去/历史，似乎逻辑上 行为记录 无需update操作？-->
+        UPDATE prior_circu_actn_record
+        SET
+            proc_id = #{procID},
+            action = #{action},
+            action_time = #{actionTime},
+            doer_id = #{doerID},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="PBCActnRecord">
+        UPDATE prior_circu_actn_record
+        SET del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

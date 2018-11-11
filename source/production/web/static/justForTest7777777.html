@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <!--<meta name="referrer" content="never">-->
+  <title>just for test......</title>
+  <script src="jQuery/jquery-1.12.4.js"></script>
+  <script type="text/javascript" src="bootstrap-4.0.0-dist/js/bootstrap.bundle.js"></script>
+  <link type="text/css" rel="stylesheet" href="bootstrap-4.0.0-dist/css/bootstrap.css">
+  <link type="text/css" rel="stylesheet" href="miscellaneous/global.css">
+  <script src="zTree_v3/js/jquery.ztree.all.js"></script>
+  <link type="text/css" rel="stylesheet" href="zTree_v3/css/zTreeStyle/zTreeStyle.css">
+  <script src="jquery-validation-1.17.0/dist/jquery.validate.js"></script>
+  <style type="text/css">
+    .myShadow:hover {
+      box-shadow: 0 14px 42px 7px #E7E7E7;
+    }
+
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Navbar</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      <li class="nav-item active">
+        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">Link</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled" href="#">Disabled</a>
+      </li>
+    </ul>
+    <form class="form-inline my-2 my-lg-0">
+      <input class="form-control mr-sm-2" type="search" placeholder="Search">
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+    </form>
+  </div>
+</nav>
+
+<nav id="navbar" class="navbar navbar-expand-sm navbar-light bg-light"> <!--fixed-top已取消-->
+  <a class="navbar-brand" href="<%--#homepage--%>"><span id="brandName">${fns:getConfig("brandName")}</span></a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarToggle">
+    <ul class="navbar-nav nav-pills mr-auto">
+          <li class="nav-item rounded">
+            <a class="nav-link rounded px-3 active" href="javascript:"
+            data-href="${ctx}/sys/menu/tree?parentID=${_1stLevelMenu.ID}" data-id="${_1stLevelMenu.ID}">
+            <span>${_1stLevelMenu.name}</span>
+            </a>
+          </li>
+
+    </ul>
+
+    <form class="mx-3"><a href="${ctx}/logout" class="btn btn-danger" title="登出">退出登录</a></form>
+  </div>
+</nav>
+
+
+
+<script type="text/javascript">
+
+</script>
+</body>
+</html>

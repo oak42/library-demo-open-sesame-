@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.sys.repository.BiblioClsMapper">
+
+    <sql id="biblioClsColumns">
+        id AS ID,
+        notation AS notation,
+        name AS name,
+        parent_id AS parentID,
+        ancestor_ids AS ancestorIDs,
+        remarks AS remarks
+    </sql>
+
+
+    <insert id="createOne" parameterType="BiblioCls">
+        INSERT INTO sys_biblio_classification ( id, notation, name, parent_id, ancestor_ids, remarks )
+        VALUES ( #{ID}, #{notation}, #{name}, #{parentID}, #{ancestorIDs}, #{remarks})
+    </insert>
+
+    <select id="retrieveOneByID" resultType="BiblioCls">
+        SELECT <include refid="biblioClsColumns"/>
+        FROM sys_biblio_classification
+        WHERE id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="BiblioCls" resultType="BiblioCls">
+        SELECT <include refid="biblioClsColumns"/>
+        FROM sys_biblio_classification
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="notation != null and notation != ''">AND notation LIKE concat("%",#{notation},"%") </if>
+        <if test="name != null and name != ''">AND name LIKE concat("%",#{name},"%") </if>
+        <if test="parentID != null and parentID != ''">AND parent_id = #{parentID} </if>
+        <if test="ancestorIDs != null and ancestorIDs != ''">AND ancestor_ids LIKE concat("%",#{ancestorIDs},"%") </if><!--★用法上 为 依照单个ancestor id来筛选-->
+        <if test="remarks != null and remarks != ''">AND remarks LIKE concat("%",#{remarks},"%") </if>
+        ORDER BY notation
+    </select>
+
+    <update id="updateOneByID" parameterType="BiblioCls">
+        UPDATE sys_biblio_classification
+        SET
+            notation = #{notation},
+            name = #{name},
+            parent_id = #{parentID},
+            ancestor_ids = #{ancestorIDs},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="BiblioCls">
+        UPDATE sys_biblio_classification
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

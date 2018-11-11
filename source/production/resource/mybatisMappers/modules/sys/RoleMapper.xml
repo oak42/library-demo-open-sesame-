@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.sys.repository.RoleMapper">
+
+    <sql id="roleColumns"><!--不含pwd、del_flag-->
+        r.id,
+        r.name,
+        r.remarks
+    </sql>
+    
+    <insert id="createOne" parameterType="Role">
+        INSERT INTO sys_role ( id, name, remarks )
+        VALUES ( #{ID}, #{name}, #{remarks} )
+    </insert>
+
+    <select id="retrieveOneByID" resultType="Role">
+        SELECT <include refid="roleColumns"/>
+        FROM sys_role AS r
+        WHERE r.id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="Role" resultType="Role">
+        SELECT <include refid="roleColumns"/>
+        FROM sys_role AS r
+        WHERE r.del_flag != #{DEL_FLAG_DELETED}
+        <if test="name != null and name != ''">AND name LIKE concat("%",#{name},"%") </if>
+    </select>
+
+    <select id="retrieveListByUserID" resultType="Role">
+        SELECT <include refid="roleColumns"/>
+        FROM sys_role AS r
+        INNER JOIN sys_user_role_rlat AS ur ON ur.role_id = r.id
+        WHERE r.del_flag != #{DEL_FLAG_DELETED} AND ur.user_id = #{paramWhatever}
+    </select>
+
+    <update id="updateOneByID" parameterType="Role">
+        UPDATE sys_role
+        SET
+            name = #{name},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="Role"><!--id不可能改，pwd、del_flag不在这改-->
+        UPDATE sys_role
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">SET name = #{name}, </if>
+            <if test="remarks != null and remarks != ''">SET remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="Role">
+        UPDATE sys_role
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

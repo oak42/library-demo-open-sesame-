@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.sys.repository.UserMapper">
+
+    <sql id="userColumns"><!--不含pwd、del_flag-->
+        id, gender, age, real_name, login_name, pwd, tel_number, ctct_addr, email, remarks
+    </sql>
+
+    <resultMap id="userResult" type="User">
+        <id column="id" property="ID"/>
+        <result column="gender" property="gender"/>
+        <result column="age" property="age"/>
+        <result column="real_name" property="realName"/>
+        <result column="login_name" property="loginName"/>
+        <result column="pwd" property="pwd"/>
+        <result column="tel_number" property="telNumber"/>
+        <result column="ctct_addr" property="ctctAddr"/>
+        <result column="email" property="email"/>
+        <result column="remarks" property="remarks"/>
+    </resultMap>
+
+    <insert id="createOne" parameterType="User">
+        INSERT INTO sys_user ( id, gender, age, real_name, login_name, tel_number, ctct_addr, email, remarks )
+        VALUES ( #{ID}, #{gender}, #{age}, #{realName}, #{loginName}, #{telNumber}, #{ctctAddr}, #{email}, #{remarks} )
+    </insert>
+
+    <select id="retrieveOneByID" resultMap="userResult">
+        SELECT <include refid="userColumns"/>
+        FROM sys_user
+        WHERE id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="User" resultMap="userResult">
+        SELECT <include refid="userColumns"/>
+        FROM sys_user
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="gender != null and gender != ''">AND gender = #{gender} </if>
+        <if test="age != null and age != ''">AND age = #{age} </if>
+        <if test="realName != null and realName != ''">AND real_name LIKE concat("%",#{realName},"%") </if>
+        <if test="loginName != null and loginName != ''">AND login_name = #{loginName} </if><!--★会被用于认证，不能模糊匹配...-->
+        <if test="telNumber != null and telNumber != ''">AND tel_number LIKE concat("%",#{telNumber},"%") </if>
+        <if test="ctctAddr != null and ctctAddr != ''">AND ctct_addr LIKE concat("%",#{ctctAddr},"%") </if>
+        <if test="email != null and email != ''">AND email LIKE concat("%",#{email},"%") </if>
+        <if test="remarks != null and remarks != ''">AND remarks LIKE concat("%",#{remarks},"%") </if>
+    </select>
+
+    <update id="updateOneByID" parameterType="User"><!--id不可能改，pwd、del_flag不在这改-->
+        UPDATE sys_user
+        SET
+            gender = #{gender},
+            age = #{age},
+            real_name = #{realName},
+            login_name = #{loginName},
+            tel_number = #{telNumber},
+            ctct_addr = #{ctctAddr},
+            email = #{email},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="User"><!--id不可能改，pwd、del_flag不在这改-->
+        UPDATE sys_user
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="gender != null and gender != ''">SET gender = #{gender}, </if>
+            <if test="age != null and age != ''">SET age = #{age}, </if>
+            <if test="realName != null and realName != ''">SET real_name = #{realName}, </if>
+            <if test="loginName != null and loginName != ''">SET login_name = #{loginName}, </if>
+            <if test="telNumber != null and telNumber != ''">SET tel_number = #{telNumber}, </if>
+            <if test="ctctAddr != null and ctctAddr != ''">SET ctct_addr = #{ctctAddr}, </if>
+            <if test="email != null and email != ''">SET email = #{email}, </if>
+            <if test="remarks != null and remarks != ''">SET remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="User">
+        UPDATE sys_user
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

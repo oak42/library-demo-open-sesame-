@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.inLibBookCircu.repository.OverdueFineMapper">
+
+    <sql id="overdueFineColumns">
+        id AS ID,
+        borrow_and_return_record_id AS borrowAndReturnRecordID,
+        amount AS amount,
+        formation_time AS formationTime,
+        lib_crd_id AS libCrdID,
+        receiving_time AS receivingTime,
+        receiving_agent_id AS receivingAgentID,
+        state AS state,
+        remarks AS remarks 
+    </sql>
+    
+    <insert id="createOne" parameterType="OverdueFine">
+        INSERT INTO inlib_circu_overdue_fine (
+        id, borrow_and_return_record_id, amount, formation_time, lib_crd_id, receiving_time, receiving_agent_id, state, remarks
+        )
+        VALUES (
+        #{ID}, #{borrowAndReturnRecordID}, #{amount}, #{formationTime}, #{libCrdID}, #{receivingTime}, #{receivingAgentID}, #{state}, #{remarks}
+        )
+    </insert>
+
+    <select id="retrieveOneByID" resultType="OverdueFine">
+        SELECT <include refid="overdueFineColumns"/>
+        FROM inlib_circu_overdue_fine
+        WHERE id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="OverdueFine" resultType="OverdueFine"><!--暂仅提供针对 ... 的筛选-->
+        SELECT <include refid="overdueFineColumns"/>
+        FROM inlib_circu_overdue_fine
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="state != null and state != ''">AND state = #{state} </if>
+        <if test="borrowAndReturnRecordID != null and borrowAndReturnRecordID != ''">AND borrow_and_return_record_id = #{borrowAndReturnRecordID} </if>
+        <if test="libCrdID != null and libCrdID != ''">AND lib_crd_id = #{libCrdID} </if>
+        <if test="receivingAgentID != null and receivingAgentID != ''">AND receiving_agent_id = #{receivingAgentID} </if>
+        <if test="remarks != null and remarks != ''">AND remarks LIKE concat("%",#{remarks},"%") </if>
+        ORDER BY formation_time
+    </select>
+
+    <update id="updateOneByID" parameterType="OverdueFine">
+        UPDATE inlib_circu_overdue_fine
+        SET
+            amount = #{amount},
+            borrow_and_return_record_id = #{borrowAndReturnRecordID},
+            formation_time = #{formationTime},
+            lib_crd_id = #{libCrdID}, 
+            receiving_time = #{receivingTime}, 
+            receiving_agent_id = #{receivingAgentID}, 
+            state = #{state},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="OverdueFine"><!--觉得永远不会有update到的场景的field就没写...-->
+        UPDATE inlib_circu_overdue_fine
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="amount != null and amount != ''">amount = #{amount},</if>
+            <if test="state != null and state != ''">state = #{state},</if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+
+    <update id="deleteOneByID" parameterType="OverdueFine">
+        UPDATE inlib_circu_overdue_fine
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>

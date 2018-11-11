@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ackerley.library.modules.sys.repository.SysRuleMapper">
+
+    <sql id="SysRuleColumns">
+        id AS ID, 
+        name AS parmName,
+        value AS parmValue,
+        remarks AS remarks
+    </sql>
+
+
+    <insert id="createOne" parameterType="SysRule">
+        INSERT INTO sys_rule ( id, name, value, remarks )
+        VALUES ( #{ID}, #{parmName}, #{parmValue}, #{remarks})
+    </insert>
+
+    <select id="retrieveOneByID" resultType="SysRule">
+        SELECT <include refid="SysRuleColumns"/>
+        FROM sys_rule
+        WHERE id = #{ID}
+    </select>
+
+    <select id="retrieveList" parameterType="SysRule" resultType="SysRule">
+        SELECT <include refid="SysRuleColumns"/>
+        FROM sys_rule
+        WHERE del_flag != #{DEL_FLAG_DELETED}
+        <if test="parmName != null and parmName != ''">AND name LIKE concat("%",#{parmName},"%") </if>
+        <if test="remarks != null and remarks != ''">AND remarks LIKE concat("%",#{remarks},"%") </if>
+        ORDER BY name
+    </select>
+
+    <update id="updateOneByID" parameterType="SysRule">
+        UPDATE sys_rule
+        SET
+            name = #{parmName},
+            value = #{parmValue},
+            remarks = #{remarks}
+        WHERE id = #{ID}
+    </update>
+
+    <update id="updateNonBlankByID" parameterType="SysRule">
+        UPDATE sys_rule
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="parmName != null and parmName != ''"> name = #{parmName}, </if>
+            <if test="parmValue != null and parmValue != ''"> value = #{parmValue}, </if>
+            <if test="remarks != null and remarks != ''"> remarks = #{remarks}, </if>
+        </trim>
+        WHERE id = #{ID}
+    </update>
+
+    <update id="deleteOneByID" parameterType="SysRule">
+        UPDATE sys_rule
+        SET
+            del_flag = #{DEL_FLAG_DELETED}
+        WHERE id = #{ID}
+    </update>
+</mapper>
