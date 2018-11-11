@@ -1,0 +1,66 @@
+【严重】
+【扣】
+【猜】
+【鸣】
+【待】
+【】
+------------------------------------------------------------------------------------------------------------------------
+
+【齐sys_menu与sys_role_menu_rlat    sql脚本】
+truncate table sys_role_menu_rlat;
+insert into sys_role_menu_rlat (role_id, menu_id) select "1",  m.id from sys_menu m;
+------------------------------------------------------------------------------------------------------------------------
+【复习】
+无值(空)的input上传的value是""，(除了unchecked的radio、checkbox是根本都不上传的，也就是null...对此spring form好像有解决办法的？确认下...)
+【加深认识】
+@ModelAttribute method返回的model attribute在handler method中再引时，data binding仍可起作用！
+就是说data binding并非仅限于对新建object的相关field的populating，对已存在的model attribute object也能。(data binding就是将request parameter绑到handler method或@ModelAttribute method的parameter？)
+@ModelAttribute的Spring4.3新加入的binding element，默认为true；指定为false可以阻止其修饰的@ModelAttribute method return value、method parameter对应的model attribute享受data binding，
+                                                             貌似一旦指定为false，不能再指定为true，(比如在@ModelAttribute method return value上指定为false，在handler method parameter再引，再想设为true，不行...)
+试过让@ModelAttribute method返回null，则该model attribute name(/key)下attribute(/value)为null，在handler method parameter再引，引(凭name/key取?)到的就是null，显然data binding不会施展到null...
+【加深认识 400 error 与 controller 入参绑定】
+日期类型Date的入参，若提交上来的同name的input value格式不对？会返回400错误...
+然后尝试，new一个现在时间Date，toString后的输出(Mon Jun 11 10:34:55 CST 2018)，填入input，提交，入参绑定成功，不报400错误了...
+同样，int、float、Double、Integer、Float、Double这些数值型的入参，若input value不能装换为数值，比如(USD 69.99)，也会400error...
+------------------------------------------------------------------------------------------------------------------------
+
+【待办】还书后，借还台的下一个流程是采编部，采编部负责将图书的上架(位置)信息录入系统...新书入库后的首次上架(位置)信息同样由采编部负责...
+【待办】后端validation，hibernate validator、jsr 303...
+【待试】mybatis的mapper interface中的method声明，并非？所有都要在.xml mapper file中实现，可以空缺？
+【待试】★单次多entity(entity list/collection)的提交如何利用data binding？
+------------------------------------------------------------------------------------------------------------------------
+
+//TODO:transaction逻辑，待加入...【目前都未考虑到实现transaction】
+【0】如何排错？各种层面的技巧？收集？讨教？笔记...
+比如mybatis <configuration> - <settings> - <setting name="logImpl" value="STDOUT_LOGGING"/> 在console输出运行过程中的SQL statement、parameter、result set等等...
+
+【1】j2se在project settings - project - project SDK 能看到；我的j2ee库依赖怎么配的（EntityManagerFactory）？
+
+【2】还不怎么会debug呢，为啥断点只会作用一次request-response round？
+
+【3】猜SessionStatus的用法，一般一个其所在的controller就是单独一个业务流程piece了？因为SessionStatus.setComplete()会清掉相关session attributes(@SessionAttributes是type-level)...
+
+【4】在客户端用js控制当前页请求新资源，必须得使用BOM的window.location了？location.href在被赋值时自动触发浏览器请求新资源？也适用于iframe内页面的刷新，iframe有自己的window？
+
+【5】如何写出(参数化的)复用性强的mybatis sql...
+
+【6】method parameter 是 pass by value (pass 的 是 copy 而非 reference) ！ 那么method return value 是 return by 啥(value?) ？ (或者此分辨本身无意义？)
+
+【7】跟着抄，多抄抄就会。但是有些会依葫芦画瓢写，但原理开始不清楚...特别关于配置、环境搭建这块，有些API维护得不好的，抄了还是不懂啥意思...怎么办
+
+------------------------------------------------------------------------------------------------------------------------
+请教：
+〇知识结构盲点 较多？
+
+①不照着例子凭空写，写不出东西啊...
+
+①Java知识面涉及很宽，怎么学？leader安排规划？自己业余根据项目需要自学？
+
+②谈谈以数据为中心。重数据，技术次之？
+
+③前台面向组件，后台面向数据。常用的重要的组件？常用的基础的数据modeling方式？
+
+④identifier的命名(好记，见名知意，无歧义、不误导)是一门学问？有规范不？阿里巴巴Java？
+
+⑤前端界面怎么不做成屎样？如何美化？
+
